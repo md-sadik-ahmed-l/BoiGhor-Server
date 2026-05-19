@@ -70,6 +70,13 @@ async function run() {
 
     })
 
+    app.delete('/rooms/:id', async(req, res )=> {
+      const {id} = req.params
+
+      const result = await libraryRoomsCollection.deleteOne({_id : new ObjectId(id)})
+      res.json(result)
+    })
+
 
     
     await client.db("admin").command({ ping: 1 });
