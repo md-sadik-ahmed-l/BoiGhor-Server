@@ -5,6 +5,7 @@ const express = require("express");
 const cors = require("cors");
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 
 const uri = process.env.MONGODB_URL;
 
@@ -22,6 +23,34 @@ const client = new MongoClient(uri, {
   },
 });
 
+
+
+const JWKS = createRemoteJWKSet(
+  new URL("http://localhost:3000/api/auth/jwks")
+)
+
+const verifyToken = async(req, res, next) =>{
+  const authHeader = req?.headers.authorization;
+  if(!authHeader){
+     res.status(401).json({message: "Unauthorized"});
+  }
+// console.log(authHeader)
+  const token = authHeader.split(" ")[1];
+  if(!token){
+     res.status(401).json({message: "Unauthorized"})
+  }
+  // console.log(token)
+  try{
+    const {payload} = await jwtVerify(token, JWKS)
+    // console.log(payload)
+    next();
+  }catch (error){
+    return res.status(403).json({message: "Forbidden"})
+  }
+}
+
+
+
 async function run() {
   try {
     await client.connect();
@@ -31,7 +60,7 @@ async function run() {
 
     const bookingRoomsCollection = db.collection("bookingRooms");
 
-    app.post("/rooms", async (req, res) => {
+    app.post("/rooms", verifyToken, async (req, res) => {
       const roomsData = req.body;
       console.log(roomsData);
 
@@ -101,8 +130,13 @@ async function run() {
 
       res.json(result);
     });
+    app.get("/home-rooms", async (req, res) => {
+      const result = await libraryRoomsCollection.find().limit(6).toArray();
 
-    app.get("/all-rooms/:id", async (req, res) => {
+      res.json(result);
+    });
+
+    app.get("/all-rooms/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
 
       const result = await libraryRoomsCollection.findOne({
@@ -113,15 +147,15 @@ async function run() {
     });
 
 
-    app.get('/my-bookings/user/:userId', async(req, res )=> {
+    app.get('/my-bookings/user/:userId', verifyToken, async(req, res )=> {
       const {userId} = req.params
       const result = await bookingRoomsCollection.find({userId : userId}).toArray();
       res.json(result);
     })
 
-    app.get('/my-listings/user/:userId', async(req, res)=>{
+    app.get('/my-listings/user/:userId', verifyToken, async(req, res)=>{
       const {userId} = req.params;
-      const result = await libraryRoomsCollection.find({userId : userId}).toArray();
+      const result = await libraryRoomsCollection.find({user : userId}).toArray();
       res.json(result);
     })
 
