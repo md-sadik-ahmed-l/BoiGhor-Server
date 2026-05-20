@@ -113,8 +113,15 @@ async function run() {
     });
 
 
-    app.get('/my-bookings', async(req, res )=> {
-      const result = await bookingRoomsCollection.find().toArray();
+    app.get('/my-bookings/user/:userId', async(req, res )=> {
+      const {userId} = req.params
+      const result = await bookingRoomsCollection.find({userId : userId}).toArray();
+      res.json(result);
+    })
+
+    app.get('/my-listings/user/:userId', async(req, res)=>{
+      const {userId} = req.params;
+      const result = await libraryRoomsCollection.find({userId : userId}).toArray();
       res.json(result);
     })
 
