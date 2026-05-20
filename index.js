@@ -113,7 +113,10 @@ async function run() {
     });
 
 
-    
+    app.get('/my-bookings', async(req, res )=> {
+      const result = await bookingRoomsCollection.find().toArray();
+      res.json(result);
+    })
 
 
     app.patch("/rooms/:id", async (req, res) => {
