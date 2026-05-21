@@ -60,6 +60,8 @@ async function run() {
 
     const bookingRoomsCollection = db.collection("bookingRooms");
 
+
+
     app.post("/rooms", verifyToken, async (req, res) => {
       const roomsData = req.body;
       console.log(roomsData);
@@ -76,7 +78,7 @@ async function run() {
     //   res.json(result)
     // })
 
-    app.post("/booking-rooms", async (req, res) => {
+    app.post("/booking-rooms", verifyToken, async (req, res) => {
       try {
         const bookingData = req.body;
 
@@ -130,6 +132,8 @@ async function run() {
 
       res.json(result);
     });
+
+
     app.get("/home-rooms", async (req, res) => {
       const result = await libraryRoomsCollection.find().limit(6).toArray();
 
@@ -160,21 +164,48 @@ async function run() {
     })
 
 
-    app.patch("/rooms/:id", async (req, res) => {
+    app.patch("/bookings/:id", async (req, res) => {
       const { id } = req.params;
-      const updateData = req.body;
+      const updatedBooking = req.body;
 
-      console.log(updateData);
+      console.log(updatedBooking);
 
-      const result = await libraryRoomsCollection.updateOne(
+      const result = await bookingRoomsCollection.updateOne(
         { _id: new ObjectId(id) },
-        { $set: updateData },
+        { $set: updatedBooking },
       );
 
       res.json(result);
     });
 
-    app.delete("/rooms/:id", async (req, res) => {
+
+    app.patch('/rooms/:id', verifyToken, async(req, res)=>{
+      const {id} =req.params;
+      const updatedRoom = req.body;
+
+
+      const result= await libraryRoomsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updatedRoom },
+
+      )
+
+      res.json(result);
+    })
+
+
+    app.delete("/my-booking/:id", verifyToken, async (req, res) => {
+      const { id } = req.params;
+
+      const result = await bookingRoomsCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.json(result);
+    });
+
+
+
+    app.delete("/rooms/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
 
       const result = await libraryRoomsCollection.deleteOne({
