@@ -42,7 +42,7 @@ const verifyToken = async(req, res, next) =>{
   // console.log(token)
   try{
     const {payload} = await jwtVerify(token, JWKS)
-    // console.log(payload)
+    
     next();
   }catch (error){
     return res.status(403).json({message: "Forbidden"})
@@ -127,11 +127,93 @@ async function run() {
       }
     });
 
-    app.get("/all-rooms", async (req, res) => {
-      const result = await libraryRoomsCollection.find().toArray();
 
-      res.json(result);
+
+    // app.get("/all-rooms", async (req, res) => {
+    //   const result = await libraryRoomsCollection.find().toArray();
+
+    //   res.json(result);
+    // });
+
+
+    app.get("/all-rooms", async (req, res) => {
+  try {
+    const {
+      search,
+      sort,
+      amenities,
+      floors,
+      minPrice,
+      maxPrice,
+    } = req.query;
+
+    let query = {};
+
+    
+    if (search) {
+      query.roomName = {
+        $regex: search,
+        $options: "i",
+      };
+    }
+
+    
+    if (amenities) {
+      const amenitiesArray = amenities.split(",");
+
+      query.amenities = {
+        $all: amenitiesArray,
+      };
+    }
+
+    
+    if (floors) {
+      const floorsArray = floors.split(",");
+
+      query.floor = {
+        $in: floorsArray,
+      };
+    }
+
+    
+    if (minPrice || maxPrice) {
+      query.hourlyRate = {};
+
+      if (minPrice) {
+        query.hourlyRate.$gte = Number(minPrice);
+      }
+
+      if (maxPrice) {
+        query.hourlyRate.$lte = Number(maxPrice);
+      }
+    }
+
+    
+    let sortOption = {};
+
+    if (sort === "low") {
+      sortOption.hourlyRate = 1;
+    }
+
+    if (sort === "high") {
+      sortOption.hourlyRate = -1;
+    }
+
+    const result = await libraryRoomsCollection
+      .find(query)
+      .sort(sortOption)
+      .toArray();
+
+    res.json(result);
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Internal server error",
     });
+  }
+});
+
 
 
     app.get("/home-rooms", async (req, res) => {
